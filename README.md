@@ -6,7 +6,8 @@
 
 Clone the repo and navigate into it.
 ```bash
-git clone
+git clone https://github.com/ethanavatar/Game-of-Life.git
+cd Game-of-Life/
 ```
 
 Install pygame if you don't have it already,
