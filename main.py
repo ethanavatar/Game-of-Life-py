@@ -1,17 +1,26 @@
-import src.Game_of_Life as GoL
+import src.GameOfLife as GoL
+import src.BriansBrain as BB
+
 from src import App
 from src.const import *
 
-def main(rule, grid):
-    sim = App.Simulation(rule, grid)
-    app = App.App(sim)
-    app.run(paused = False)
-
-if __name__ == '__main__':
+def GameOfLife():
     grid = App.new_grid()
     
-    # Spawn a really long vertical line with 20 dead cells on top and bottom
-    for row in range(20, CELLMAP_HEIGHT-20):
-        grid[row][CELLMAP_WIDTH // 2] = 1
+    # Spawn a really long vertical line with 10 dead cells on top and bottom
+    for row in range(10, CELLMAP_HEIGHT-10):
+        App.set_cell(grid, CELLMAP_WIDTH//2, row,  ALIVE)
 
-    main(GoL.rule, grid)
+    sim = App.Simulation(GoL.rule, grid)
+    app = App.App(sim)
+    app.run(paused=False)
+
+def BriansBrain():
+    grid = App.random_grid()
+    sim = App.Simulation(BB.rule, grid)
+    app = App.App(sim)
+    app.run(paused=False)
+
+if __name__ == '__main__':
+    GameOfLife()
+    #BriansBrain()

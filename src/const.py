@@ -1,3 +1,5 @@
+from enum import IntEnum
+
 CELLMAP_WIDTH = 200
 CELLMAP_HEIGHT = 200
 
@@ -18,6 +20,8 @@ PAUSED = True
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
 
 DEAD = 0
 ALIVE = 1
+DYING = 2

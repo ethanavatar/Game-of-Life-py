@@ -5,29 +5,32 @@ from pygame.locals import *
 from .const import *
 
 def new_grid():
-    grid = [[DEAD for i in range(CELLMAP_WIDTH)] for j in range(CELLMAP_HEIGHT)]
+    grid = [DEAD for i in range(CELLMAP_WIDTH*CELLMAP_WIDTH)]
     return grid
 
 def random_grid():
-    grid = new_grid()
-    for row in range(CELLMAP_HEIGHT):
-        for col in range(CELLMAP_WIDTH):
-            grid[row][col] = random.randint(0, 1)
+    grid = [random.randint(0, 1) for i in range(CELLMAP_WIDTH*CELLMAP_WIDTH)]
     return grid
+def get_cell(grid, row, col):
+    return grid[row*CELLMAP_WIDTH + col]
+
+def set_cell(grid, row, col, value):
+    grid[row*CELLMAP_WIDTH + col] = value
 
 class Simulation:
-    def __init__(self, rule, grid=None):
+    def __init__(self, rule, initial_state=None):
         self.rule = rule
 
-        if grid is None:
-            self.grid = new_grid()
+        if initial_state is None:
+            self.current_gen = new_grid()
         else:
-            self.grid = grid       
+            self.current_gen = initial_state     
 
         self.generation = 0
         
     def next_generation(self):
-        self.grid = self.rule(self.grid)
+        self.last_gen = self.current_gen
+        self.current_gen = self.rule(self.current_gen)
         self.generation += 1
     
 class App:
@@ -47,8 +50,11 @@ class App:
         self.hold = False
         self.hold_value = None
 
-        self.step_hold = False
-        self.step_hold_time = 0
+        self.forward_hold = False
+        self.forward_hold_time = 0
+
+        self.backward_hold = False
+        self.backward_hold_time = 0
 
         self.mouse_row = None
         self.mouse_col = None
@@ -83,66 +89,69 @@ class App:
                 self.running = False
                 pygame.quit()
                 quit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 self.mouse_down = True
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            elif event.type == pygame.MOUSEBUTTONUP:
                 self.mouse_up = True
 
-            if event.type == pygame.MOUSEMOTION:
+            elif event.type == pygame.MOUSEMOTION:
                 mouse_pos = pygame.mouse.get_pos()
                 self.mouse_col, self.mouse_row = int(mouse_pos[0] // CELL_WIDTH), int(mouse_pos[1] // CELL_HEIGHT)
             
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
+
                 if event.key == pygame.K_SPACE:
                     self.paused ^= True
-                    print(f'paused={self.paused}')
+                    print(f'paused = {self.paused}')
 
-                if event.key == pygame.K_ESCAPE:
-                    self.simulation.grid = new_grid()
+                elif event.key == pygame.K_ESCAPE:
+                    self.simulation.current_gen = new_grid()
                     self.simulation.generation = 0
                     print('clear')
 
-                if event.key == pygame.K_r:
-                    self.simulation.grid = random_grid()
+                elif event.key == pygame.K_r:
+                    self.simulation.current_gen = random_grid()
                     print('random')
 
-                '''
-                if event.key == pygame.K_g:
-                    self.simulation.grid = Game_of_Life.glider(self.simulation.grid, self.mouse_row, self.mouse_col)
-                '''
-                
-                if event.key == pygame.K_COMMA:
-                    pass
-                if event.key == pygame.K_PERIOD:
+                elif event.key == pygame.K_PERIOD:
                     self.paused = True
                     self.simulation.next_generation()
-                    self.step_hold = True
-                    self.step_hold_time = pygame.time.get_ticks()
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_PERIOD:
-                    self.step_hold = False
+                    self.forward_hold = True
+                    self.forward_hold_time = pygame.time.get_ticks()
 
-        if self.step_hold and pygame.time.get_ticks() - self.step_hold_time > 200:
+            elif event.type == pygame.KEYUP:
+
+                if event.key == pygame.K_PERIOD:
+
+                    self.forward_hold = False
+
+        if self.forward_hold and pygame.time.get_ticks() - self.forward_hold_time > 200:
+
             self.simulation.next_generation()
 
         if self.mouse_down:
-            self.hold = True
-            if self.simulation.grid[self.mouse_row][self.mouse_col] == 1:
-                # TODO: Pure functionalize this
-                self.simulation.grid[self.mouse_row][self.mouse_col] = 0
 
+            self.hold = True
+
+            if get_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row) == ALIVE:
+
+                set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, 0)
                 self.hold_value = 0
 
-            elif self.simulation.grid[self.mouse_row][self.mouse_col] == 0:
-                # TODO: Pure functionalize this
-                self.simulation.grid[self.mouse_row][self.mouse_col] = 1
+            elif get_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row) == DEAD:
+
+                set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, 1)
                 self.hold_value = 1
 
             self.mouse_down = False
+
         if self.hold:
-            self.simulation.grid[self.mouse_row][self.mouse_col] = self.hold_value
+
+            set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, self.hold_value)
+
             if self.mouse_up:
+
                 self.hold = False
                 self.mouse_up = False
 
@@ -155,11 +164,15 @@ class App:
     def draw(self):
         self.screen.fill(BLACK)
         color = BLACK
-        for row in range(CELLMAP_HEIGHT):
-            for col in range(CELLMAP_WIDTH):
-                if self.simulation.grid[row][col] == 1:
-                    color = WHITE
-                    pygame.draw.rect(self.screen, color, pygame.Rect((col * CELL_WIDTH, row * CELL_HEIGHT), (CELL_WIDTH, CELL_HEIGHT)), FILL_CELL ^ 1)
+        for i in range(CELLMAP_HEIGHT*CELLMAP_WIDTH):
+            row = i % CELLMAP_WIDTH
+            col = i // CELLMAP_WIDTH
+            if self.simulation.current_gen[i] == ALIVE:
+                color = WHITE
+                pygame.draw.rect(self.screen, color, pygame.Rect((col * CELL_WIDTH, row * CELL_HEIGHT), (CELL_WIDTH, CELL_HEIGHT)), FILL_CELL ^ 1)
+            elif self.simulation.current_gen[i] == DYING:
+                color = BLUE
+                pygame.draw.rect(self.screen, color, pygame.Rect((col * CELL_WIDTH, row * CELL_HEIGHT), (CELL_WIDTH, CELL_HEIGHT)), FILL_CELL ^ 1)
 
         if SHOW_FPS:
             fps = self.FPScounter.render(f'FPS: {round(self.clock.get_fps(), 2)}', True, WHITE)
