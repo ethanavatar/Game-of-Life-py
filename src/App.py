@@ -2,53 +2,18 @@ import pygame, random
 
 from pygame.locals import *
 
-from src import Game_of_Life
-
-GRID_WIDTH = 200
-GRID_HEIGHT = 200
-
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 1200
-
-PIXEL_WIDTH = SCREEN_WIDTH / GRID_WIDTH
-PIXEL_HEIGHT = SCREEN_HEIGHT / GRID_HEIGHT
-
-SHOW_FPS = True
-SHOW_GENERATION = True
-
-FPS = None
-PAUSED = True
-
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
+from .const import *
 
 def new_grid():
-    grid = [[0 for i in range(GRID_WIDTH)] for j in range(GRID_HEIGHT)]
+    grid = [[DEAD for i in range(CELLMAP_WIDTH)] for j in range(CELLMAP_HEIGHT)]
     return grid
 
 def random_grid():
     grid = new_grid()
-    for row in range(GRID_HEIGHT):
-        for col in range(GRID_WIDTH):
+    for row in range(CELLMAP_HEIGHT):
+        for col in range(CELLMAP_WIDTH):
             grid[row][col] = random.randint(0, 1)
     return grid
-
-def get_neighbors(row, col):
-    neighbors = [
-        (col-1, row),
-        (col+1, row),
-        (col, row-1),
-        (col, row+1),
-        (col-1, row-1),
-        (col+1, row+1),
-        (col-1, row+1),
-        (col+1, row-1)
-    ]
-    ret = []
-    
-    for pos in neighbors:
-        ret.append((pos[1]%GRID_HEIGHT, pos[0]%GRID_WIDTH))
-    return ret
 
 class Simulation:
     def __init__(self, rule, grid=None):
@@ -88,7 +53,10 @@ class App:
         self.mouse_row = None
         self.mouse_col = None
 
+        self.latency = 0
+
         self.FPScounter = pygame.font.Font(None, 15)
+        self.LatencyCounter = pygame.font.Font(None, 15)
         self.GENcounter = pygame.font.Font(None, 15)
         
 
@@ -99,11 +67,11 @@ class App:
             # If there is a specified FPS cap
             if FPS:
                 # Clock at the specified FPS cap
-                self.clock.tick(FPS)
+                self.latency = self.clock.tick(FPS)
             # If there is no specified FPS cap
             else: # default; self.targetFPS == None
                 # Clock at unbound speed
-                self.clock.tick()
+                self.latency = self.clock.tick()
             
             self.events()
             self.update()
@@ -123,21 +91,21 @@ class App:
 
             if event.type == pygame.MOUSEMOTION:
                 mouse_pos = pygame.mouse.get_pos()
-                self.mouse_col, self.mouse_row = int(mouse_pos[0] // PIXEL_WIDTH), int(mouse_pos[1] // PIXEL_HEIGHT)
+                self.mouse_col, self.mouse_row = int(mouse_pos[0] // CELL_WIDTH), int(mouse_pos[1] // CELL_HEIGHT)
             
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
                     self.paused ^= True
-                    print(f'{self.paused=}')
+                    print(f'paused={self.paused}')
 
                 if event.key == pygame.K_ESCAPE:
                     self.simulation.grid = new_grid()
                     self.simulation.generation = 0
-                    print(f'clear')
+                    print('clear')
 
                 if event.key == pygame.K_r:
                     self.simulation.grid = random_grid()
-                    print(f'random')
+                    print('random')
 
                 '''
                 if event.key == pygame.K_g:
@@ -186,18 +154,23 @@ class App:
 
     def draw(self):
         self.screen.fill(BLACK)
-        surface = pygame.Surface((PIXEL_WIDTH, PIXEL_HEIGHT))
-        surface.fill(WHITE)
-        for row in range(GRID_HEIGHT):
-            for col in range(GRID_WIDTH):
+        color = BLACK
+        for row in range(CELLMAP_HEIGHT):
+            for col in range(CELLMAP_WIDTH):
                 if self.simulation.grid[row][col] == 1:
-                    self.screen.blit(surface, pygame.Rect((col * PIXEL_WIDTH, row * PIXEL_HEIGHT), (PIXEL_WIDTH, PIXEL_HEIGHT)))
+                    color = WHITE
+                    pygame.draw.rect(self.screen, color, pygame.Rect((col * CELL_WIDTH, row * CELL_HEIGHT), (CELL_WIDTH, CELL_HEIGHT)), FILL_CELL ^ 1)
 
         if SHOW_FPS:
-            fps = self.FPScounter.render(f'FPS: {round(self.clock.get_fps(), 2)}{self.simulation.generation}', True, WHITE)
-            self.screen.blit(fps, (SCREEN_WIDTH - 100, 10))
+            fps = self.FPScounter.render(f'FPS: {round(self.clock.get_fps(), 2)}', True, WHITE)
+            self.screen.blit(fps, (SCREEN_WIDTH - 100, 15))
+
+        if SHOW_LATENCY:
+            latency = self.LatencyCounter.render(f'Latency: {self.latency} ms', True, WHITE)
+            self.screen.blit(latency, (SCREEN_WIDTH - 100, 30))
+            
         if SHOW_GENERATION:
             generation = self.GENcounter.render(f'Generation: {self.simulation.generation}', True, WHITE)
-            self.screen.blit(generation, (SCREEN_WIDTH - 100, 25))
+            self.screen.blit(generation, (SCREEN_WIDTH - 100, 45))
         
         pygame.display.update()
