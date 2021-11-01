@@ -6,7 +6,7 @@
 
 Clone the repo and navigate into it.
 ```bash
-git clone https://github.com/ethanavatar/Game-of-Life.git
+git clone https://github.com/ethanavatar/Game-of-Life-py.git
 cd Game-of-Life/
 ```
 
