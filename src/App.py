@@ -59,6 +59,8 @@ class App:
         self.mouse_row = None
         self.mouse_col = None
 
+        self.mod = False
+
         self.latency = 0
 
         self.FPScounter = pygame.font.Font(None, 15)
@@ -120,11 +122,17 @@ class App:
                     self.forward_hold = True
                     self.forward_hold_time = pygame.time.get_ticks()
 
+                elif event.key ==pygame.K_LCTRL:
+                    self.mod = True
+
             elif event.type == pygame.KEYUP:
 
                 if event.key == pygame.K_PERIOD:
 
                     self.forward_hold = False
+
+                elif event.key == pygame.K_LCTRL:
+                    self.mod = False
 
         if self.forward_hold and pygame.time.get_ticks() - self.forward_hold_time > 200:
 
@@ -134,15 +142,18 @@ class App:
 
             self.hold = True
 
-            if get_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row) == ALIVE:
+            if get_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row) != DEAD:
 
                 set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, 0)
                 self.hold_value = 0
 
             elif get_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row) == DEAD:
-
-                set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, 1)
-                self.hold_value = 1
+                if self.mod:
+                    set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, DYING)
+                    self.hold_value = DYING
+                else:
+                    set_cell(self.simulation.current_gen, self.mouse_col, self.mouse_row, 1)
+                    self.hold_value = 1
 
             self.mouse_down = False
 

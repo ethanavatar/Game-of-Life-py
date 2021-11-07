@@ -16,10 +16,23 @@ def GameOfLife():
     app.run(paused=False)
 
 def BriansBrain():
-    grid = App.random_grid()
+    grid = App.new_grid()
+
+    #App.set_cell(grid, 99, 100+4, ALIVE)
+    #App.set_cell(grid, 99, 100-4, ALIVE)
+
+    #App.set_cell(grid, 100, 100+4, ALIVE)
+    #App.set_cell(grid, 100, 100-4, ALIVE)
+
+    App.set_cell(grid, 99, 100+5, ALIVE)
+    App.set_cell(grid, 99, 100-5, ALIVE)
+
+    App.set_cell(grid, 100, 100+5, ALIVE)
+    App.set_cell(grid, 100, 100-5, ALIVE)
+
     sim = App.Simulation(BB.rule, grid)
     app = App.App(sim)
-    app.run(paused=False)
+    app.run(paused=True)
 
 if __name__ == '__main__':
     GameOfLife()
