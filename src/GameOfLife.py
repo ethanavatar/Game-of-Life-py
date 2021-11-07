@@ -2,7 +2,7 @@ from . import App
 from .const import *
 
 def rule(prev_gen):
-    next_gen = App.new_grid()
+    next_gen = new_grid()
     for i in range(CELLMAP_HEIGHT*CELLMAP_WIDTH):
         cell = prev_gen[i]
         alive_neighbors = sum([
